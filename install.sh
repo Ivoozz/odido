@@ -1,0 +1,792 @@
+#!/bin/bash
+# Odido Datalek Informatie – Automatische installatie
+# Gebruik: curl -sL https://raw.githubusercontent.com/Ivoozz/odido/main/install.sh | bash
+set -e
+
+# Kleuren
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+NC='\033[0m'
+
+info()    { echo -e "${YELLOW}[INFO]${NC}  $1"; }
+success() { echo -e "${GREEN}[OK]${NC}    $1"; }
+error()   { echo -e "${RED}[FOUT]${NC}  $1"; exit 1; }
+
+echo ""
+echo -e "${BOLD}${CYAN}========================================${NC}"
+echo -e "${BOLD}${CYAN}  Odido Datalek Informatie Installer    ${NC}"
+echo -e "${BOLD}${CYAN}========================================${NC}"
+echo ""
+
+# Controleer root
+if [ "$(id -u)" -ne 0 ]; then
+  error "Dit script moet worden uitgevoerd als root. Gebruik: sudo bash install.sh"
+fi
+success "Draait als root"
+
+# Update & upgrade
+info "Pakketlijsten bijwerken en systeem upgraden..."
+apt-get update -y
+apt-get upgrade -y
+success "Systeem bijgewerkt"
+
+# Installeer Nginx en curl
+info "Nginx en curl installeren..."
+apt-get install -y nginx curl
+success "Nginx en curl geïnstalleerd"
+
+# Maak webroot aan
+info "Webroot aanmaken: /var/www/odido/"
+mkdir -p /var/www/odido
+success "Webroot aangemaakt"
+
+# Schrijf index.html
+info "index.html schrijven..."
+cat > /var/www/odido/index.html << 'HTML_CONTENT'
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Informatie over het Odido datalek 2026. Wat is er uitgelekt, wat moet je doen en hoe bescherm je jezelf." />
+  <title>Odido Datalek Informatie – Wat moet je doen?</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html { scroll-behavior: smooth; }
+    .faq-answer { display: none; }
+    .faq-answer.open { display: block; }
+    .faq-icon { transition: transform 0.2s; }
+    .faq-icon.rotated { transform: rotate(45deg); }
+  </style>
+</head>
+<body class="bg-gray-950 text-gray-100 font-sans">
+
+  <!-- NAVIGATION -->
+  <nav class="bg-gray-900 border-b border-gray-800 sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+      <a href="#top" class="text-white font-bold text-lg tracking-tight">
+        🔒 Odido Datalek Informatie
+      </a>
+      <ul class="hidden md:flex gap-6 text-sm text-gray-300">
+        <li><a href="#situatie" class="hover:text-white transition">Situatie</a></li>
+        <li><a href="#data-online" class="hover:text-white transition">Wat staat online</a></li>
+        <li><a href="#actiepunten" class="hover:text-white transition">Actiepunten</a></li>
+        <li><a href="#hibp" class="hover:text-white transition">HIBP Check</a></li>
+        <li><a href="#faq" class="hover:text-white transition">FAQ</a></li>
+        <li><a href="#bronnen" class="hover:text-white transition">Bronnen</a></li>
+      </ul>
+      <button id="menu-btn" class="md:hidden text-gray-300 hover:text-white focus:outline-none" aria-label="Menu openen">
+        <svg id="icon-open" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+        <svg id="icon-close" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div id="mobile-menu" class="hidden md:hidden bg-gray-900 border-t border-gray-800">
+      <ul class="flex flex-col px-4 py-3 gap-3 text-sm text-gray-300">
+        <li><a href="#situatie" class="block hover:text-white transition" onclick="closeMobileMenu()">Situatie</a></li>
+        <li><a href="#data-online" class="block hover:text-white transition" onclick="closeMobileMenu()">Wat staat online</a></li>
+        <li><a href="#actiepunten" class="block hover:text-white transition" onclick="closeMobileMenu()">Actiepunten</a></li>
+        <li><a href="#hibp" class="block hover:text-white transition" onclick="closeMobileMenu()">HIBP Check</a></li>
+        <li><a href="#faq" class="block hover:text-white transition" onclick="closeMobileMenu()">FAQ</a></li>
+        <li><a href="#bronnen" class="block hover:text-white transition" onclick="closeMobileMenu()">Bronnen</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section id="top" class="bg-gradient-to-b from-gray-900 to-gray-950 pt-20 pb-24 px-4">
+    <div class="max-w-4xl mx-auto text-center">
+      <span class="inline-flex items-center gap-2 bg-red-600 text-white text-sm font-semibold px-4 py-1.5 rounded-full mb-8 shadow-lg">
+        ⚠️ Actief datalek
+      </span>
+      <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold text-white leading-tight mb-6">
+        Jouw gegevens zijn mogelijk uitgelekt bij Odido
+      </h1>
+      <p class="text-lg md:text-xl text-gray-300 max-w-2xl mx-auto mb-10">
+        Begin 2026 werden de persoonsgegevens van <strong class="text-white">6,5 miljoen mensen</strong> en
+        <strong class="text-white">600.000 bedrijven</strong> door hackers online gepubliceerd.
+        IBAN-nummers, ID-bewijsnummers en BSN-nummers staan nu op het dark web.
+        Hier vind je alles wat je moet weten en doen.
+      </p>
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <a href="#actiepunten"
+           class="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-7 py-3.5 rounded-lg transition shadow-lg text-base">
+          Wat moet ik doen?
+        </a>
+        <a href="https://haveibeenpwned.com/" target="_blank" rel="noopener noreferrer"
+           class="bg-orange-500 hover:bg-orange-400 text-white font-semibold px-7 py-3.5 rounded-lg transition shadow-lg text-base">
+          Controleer mijn e-mail →
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- SITUATIE OVERZICHT -->
+  <section id="situatie" class="py-20 px-4 bg-gray-950">
+    <div class="max-w-5xl mx-auto">
+      <h2 class="text-3xl md:text-4xl font-bold text-white mb-3">Wat is er gebeurd?</h2>
+      <p class="text-gray-400 text-lg mb-10">De feiten over het Odido datalek op een rij.</p>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-12">
+        <div class="bg-gray-800 rounded-xl p-6 border border-gray-700 text-center">
+          <div class="text-4xl font-extrabold text-blue-400 mb-2">6,5 mln</div>
+          <div class="text-gray-300 text-sm">getroffen personen</div>
+        </div>
+        <div class="bg-gray-800 rounded-xl p-6 border border-gray-700 text-center">
+          <div class="text-4xl font-extrabold text-blue-400 mb-2">600.000</div>
+          <div class="text-gray-300 text-sm">getroffen bedrijven</div>
+        </div>
+        <div class="bg-gray-800 rounded-xl p-6 border border-gray-700 text-center">
+          <div class="text-4xl font-extrabold text-red-400 mb-2">5+ mln</div>
+          <div class="text-gray-300 text-sm">unieke ID-nummers</div>
+        </div>
+      </div>
+
+      <div class="bg-gray-800 rounded-xl p-7 border border-gray-700 mb-8">
+        <h3 class="text-xl font-bold text-white mb-4">Achtergrond</h3>
+        <p class="text-gray-300 leading-relaxed mb-4">
+          Begin 2026 kreeg Odido (voorheen T-Mobile Nederland) te maken met een grote cyberaanval door de beruchte
+          hackersgroep <strong class="text-white">ShinyHunters</strong>. De aanvallers wisten een grote hoeveelheid
+          klant- en bedrijfsdata buit te maken en eisten losgeld. Odido weigerde te betalen, waarna de hackers
+          de volledige dataset online publiceerden — eerst gedeeltelijk, later de volledige 6,5 miljoen records.
+        </p>
+        <p class="text-gray-300 leading-relaxed">
+          De Nederlandse autoriteiten, waaronder de Autoriteit Persoonsgegevens (AP), zijn een onderzoek gestart.
+          Odido heeft een <a href="https://www.odido.nl/veiligheid" target="_blank" rel="noopener noreferrer"
+          class="text-blue-400 hover:text-blue-300 underline">speciale informatiepagina</a> opgezet voor gedupeerden.
+        </p>
+      </div>
+
+      <div class="bg-gray-800 rounded-xl p-7 border border-gray-700">
+        <h3 class="text-xl font-bold text-white mb-5">Wat is er uitgelekt?</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+          <div class="flex items-start gap-3">
+            <span class="text-red-400 mt-0.5 text-lg flex-shrink-0">✗</span>
+            <span class="text-gray-300">Namen, adressen en geboortedatums</span>
+          </div>
+          <div class="flex items-start gap-3">
+            <span class="text-red-400 mt-0.5 text-lg flex-shrink-0">✗</span>
+            <span class="text-gray-300">E-mailadressen en telefoonnummers</span>
+          </div>
+          <div class="flex items-start gap-3">
+            <span class="text-red-400 mt-0.5 text-lg flex-shrink-0">✗</span>
+            <span class="text-gray-300">IBAN-bankrekeningnummers</span>
+          </div>
+          <div class="flex items-start gap-3">
+            <span class="text-red-400 mt-0.5 text-lg flex-shrink-0">✗</span>
+            <span class="text-gray-300">Identiteitsdocumentnummers (paspoort, rijbewijs, ID-kaart) — 5+ miljoen</span>
+          </div>
+          <div class="flex items-start gap-3">
+            <span class="text-red-400 mt-0.5 text-lg flex-shrink-0">✗</span>
+            <span class="text-gray-300">BSN-nummers (in sommige gevallen)</span>
+          </div>
+          <div class="flex items-start gap-3">
+            <span class="text-red-400 mt-0.5 text-lg flex-shrink-0">✗</span>
+            <span class="text-gray-300">Medewerkersnotities (stalking, schulden, huiselijk geweld)</span>
+          </div>
+          <div class="flex items-start gap-3">
+            <span class="text-red-400 mt-0.5 text-lg flex-shrink-0">✗</span>
+            <span class="text-gray-300">71.000+ records met e-mails van begeleiders/voogden</span>
+          </div>
+          <div class="flex items-start gap-3">
+            <span class="text-red-400 mt-0.5 text-lg flex-shrink-0">✗</span>
+            <span class="text-gray-300">Diplomatieke documenten</span>
+          </div>
+        </div>
+        <div class="p-4 bg-green-900/40 rounded-lg border border-green-700">
+          <p class="text-green-300 text-sm">
+            <strong>✓ Niet uitgelekt:</strong> Wachtwoorden, belgegevens en factuurspecificaties waren niet
+            aanwezig in het gelekte systeem.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WAT STAAT ER ONLINE -->
+  <section id="data-online" class="py-20 px-4 bg-gray-900">
+    <div class="max-w-5xl mx-auto">
+      <h2 class="text-3xl md:text-4xl font-bold text-white mb-3">Wat staat er online?</h2>
+      <p class="text-gray-400 text-lg mb-10">De omvang van de gepubliceerde data en waar die nu te vinden is.</p>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+          <div class="text-3xl mb-3">🌑</div>
+          <h3 class="text-lg font-bold text-white mb-3">Gepubliceerd op het dark web</h3>
+          <p class="text-gray-300 text-sm leading-relaxed">
+            Nadat Odido weigerde het gevraagde losgeld te betalen, publiceerden ShinyHunters de volledige
+            dataset op een dark web forum. Eerst verscheen een deel van de data; later zijn alle 6,5 miljoen
+            records volledig openbaar gemaakt.
+          </p>
+        </div>
+        <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+          <div class="text-3xl mb-3">🔍</div>
+          <h3 class="text-lg font-bold text-white mb-3">Doorzoekbaar voor criminelen</h3>
+          <p class="text-gray-300 text-sm leading-relaxed">
+            Media zoals NU.nl en Tweakers bevestigden dat alle 6,5 miljoen records volledig online staan
+            en doorzoekbaar zijn. Criminelen kunnen gericht zoeken op naam, e-mail of IBAN om
+            slachtoffers te targeten voor fraude, phishing en identiteitsdiefstal.
+          </p>
+        </div>
+        <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+          <div class="text-3xl mb-3">🎭</div>
+          <h3 class="text-lg font-bold text-white mb-3">Risico op identiteitsfraude</h3>
+          <p class="text-gray-300 text-sm leading-relaxed">
+            Met IBAN-nummers en ID-bewijsnummers kunnen criminelen bankrekeningen openen, leningen
+            aanvragen of producten bestellen op jouw naam. De combinatie van BSN + ID-nummer maakt dit
+            bijzonder gevaarlijk.
+          </p>
+        </div>
+        <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+          <div class="text-3xl mb-3">📱</div>
+          <h3 class="text-lg font-bold text-white mb-3">Gerichte phishing en oplichting</h3>
+          <p class="text-gray-300 text-sm leading-relaxed">
+            Doordat criminelen je naam, adres en contactgegevens kennen, kunnen zij je bij naam aanspreken
+            in nep-e-mails, sms'jes en telefoontjes. Dit maakt phishing-aanvallen veel geloofwaardiger
+            dan generieke spam.
+          </p>
+        </div>
+      </div>
+
+      <div class="bg-red-900/30 rounded-xl p-6 border border-red-700">
+        <p class="text-red-200 text-sm leading-relaxed">
+          <strong class="text-red-100">Let op:</strong> De gelekte data bevat ook zeer gevoelige
+          medewerkersnotities, zoals aantekeningen over stalking, schulden en huiselijk geweld.
+          Dit is een ernstige schending van de privacy van de meest kwetsbare klanten.
+          71.000+ minderjarigen of kwetsbare personen zijn geregistreerd met e-mailadressen van
+          begeleiders of voogden.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ACTIEPUNTEN -->
+  <section id="actiepunten" class="py-20 px-4 bg-gray-950">
+    <div class="max-w-5xl mx-auto">
+      <h2 class="text-3xl md:text-4xl font-bold text-white mb-3">Wat moet je doen?</h2>
+      <p class="text-gray-400 text-lg mb-10">Volg deze 10 stappen om jezelf zo goed mogelijk te beschermen.</p>
+
+      <div class="flex flex-col gap-5">
+
+        <div class="bg-gray-800 rounded-xl p-6 border border-gray-700 flex gap-5">
+          <div class="flex-shrink-0 w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xl">1</div>
+          <div>
+            <h3 class="text-lg font-bold text-white mb-2">🔎 Controleer je e-mail via Have I Been Pwned</h3>
+            <p class="text-gray-300 text-sm leading-relaxed">
+              Ga naar <a href="https://haveibeenpwned.com/" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:text-blue-300 underline">haveibeenpwned.com</a>
+              en vul je e-mailadres in. Je ziet direct of jouw adres voorkomt in bekende datalekken.
+              Controleer ook via de Nederlandse <a href="https://www.politie.nl/informatie/checkjehack.html" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:text-blue-300 underline">Check je Hack</a>
+              tool van de politie.
+            </p>
+          </div>
+        </div>
+
+        <div class="bg-gray-800 rounded-xl p-6 border border-gray-700 flex gap-5">
+          <div class="flex-shrink-0 w-12 h-12 bg-orange-600 rounded-full flex items-center justify-center text-white font-bold text-xl">2</div>
+          <div>
+            <h3 class="text-lg font-bold text-white mb-2">🎣 Wees hyper-alert op phishing en smishing</h3>
+            <p class="text-gray-300 text-sm leading-relaxed">
+              Vertrouw geen onverwachte e-mails, sms'jes of telefoontjes — ook niet als ze je bij naam aanspreken.
+              Criminelen beschikken nu over jouw naam, adres en contactgegevens en kunnen zeer geloofwaardige
+              berichten sturen. Klik nooit op links in verdachte berichten en bel altijd terug via het officiële nummer.
+            </p>
+          </div>
+        </div>
+
+        <div class="bg-gray-800 rounded-xl p-6 border border-gray-700 flex gap-5">
+          <div class="flex-shrink-0 w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xl">3</div>
+          <div>
+            <h3 class="text-lg font-bold text-white mb-2">🔑 Wijzig je wachtwoorden</h3>
+            <p class="text-gray-300 text-sm leading-relaxed">
+              Verander in ieder geval je wachtwoord bij Odido en bij alle diensten waar je hetzelfde wachtwoord
+              gebruikt. Gebruik een wachtwoordmanager (zoals Bitwarden of 1Password) om unieke, sterke wachtwoorden
+              te genereren en op te slaan.
+            </p>
+          </div>
+        </div>
+
+        <div class="bg-gray-800 rounded-xl p-6 border border-gray-700 flex gap-5">
+          <div class="flex-shrink-0 w-12 h-12 bg-green-600 rounded-full flex items-center justify-center text-white font-bold text-xl">4</div>
+          <div>
+            <h3 class="text-lg font-bold text-white mb-2">🛡️ Schakel twee-factor-authenticatie (2FA) in</h3>
+            <p class="text-gray-300 text-sm leading-relaxed">
+              Activeer 2FA op alle belangrijke accounts: e-mail, internetbankieren, DigiD en social media.
+              Gebruik bij voorkeur een authenticator-app (zoals Google Authenticator of Authy) in plaats van
+              SMS, want SMS is minder veilig.
+            </p>
+          </div>
+        </div>
+
+        <div class="bg-gray-800 rounded-xl p-6 border border-gray-700 flex gap-5">
+          <div class="flex-shrink-0 w-12 h-12 bg-orange-600 rounded-full flex items-center justify-center text-white font-bold text-xl">5</div>
+          <div>
+            <h3 class="text-lg font-bold text-white mb-2">💳 Controleer je bankrekening en IBAN</h3>
+            <p class="text-gray-300 text-sm leading-relaxed">
+              Houd je bankafschriften extra goed in de gaten op verdachte of onverwachte afschrijvingen.
+              Je IBAN-nummer is uitgelekt — meld verdachte activiteit direct bij je bank. Overweeg een
+              fraudemelding bij je bank te plaatsen als extra bescherming.
+            </p>
+          </div>
+        </div>
+
+        <div class="bg-gray-800 rounded-xl p-6 border border-gray-700 flex gap-5">
+          <div class="flex-shrink-0 w-12 h-12 bg-red-600 rounded-full flex items-center justify-center text-white font-bold text-xl">6</div>
+          <div>
+            <h3 class="text-lg font-bold text-white mb-2">🪪 Meld identiteitsfraude tijdig</h3>
+            <p class="text-gray-300 text-sm leading-relaxed">
+              Als je denkt dat iemand misbruik maakt van jouw identiteitsdocument, meld dit dan direct bij
+              de politie. Je kunt ook een melding doen bij VIS (Stichting Fraudebestrijding Hypotheken) of
+              Experian om je identiteit te beschermen bij krediet- of hypotheekaanvragen.
+            </p>
+          </div>
+        </div>
+
+        <div class="bg-gray-800 rounded-xl p-6 border border-gray-700 flex gap-5">
+          <div class="flex-shrink-0 w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xl">7</div>
+          <div>
+            <h3 class="text-lg font-bold text-white mb-2">📋 Let op bij identiteitscontroles</h3>
+            <p class="text-gray-300 text-sm leading-relaxed">
+              Wees extra voorzichtig als je gevraagd wordt een kopie van je ID te verstrekken. Zet een
+              duidelijk watermerk op de kopie (bijv. "Kopie – alleen voor [naam organisatie] – datum")
+              of teken een kruis over de kopie. De overheid heeft hier ook informatie over via
+              <a href="https://www.rijksoverheid.nl" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:text-blue-300 underline">rijksoverheid.nl</a>.
+            </p>
+          </div>
+        </div>
+
+        <div class="bg-gray-800 rounded-xl p-6 border border-gray-700 flex gap-5">
+          <div class="flex-shrink-0 w-12 h-12 bg-green-600 rounded-full flex items-center justify-center text-white font-bold text-xl">8</div>
+          <div>
+            <h3 class="text-lg font-bold text-white mb-2">🏛️ Houd je DigiD veilig</h3>
+            <p class="text-gray-300 text-sm leading-relaxed">
+              Controleer de inlogactiviteit via
+              <a href="https://mijn.digid.nl" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:text-blue-300 underline">Mijn DigiD</a>
+              en schakel de DigiD-app of SMS-beveiliging in als je dat nog niet hebt gedaan.
+              Activeer de loginmelding per e-mail zodat je direct wordt gewaarschuwd bij gebruik van je DigiD.
+            </p>
+          </div>
+        </div>
+
+        <div class="bg-gray-800 rounded-xl p-6 border border-gray-700 flex gap-5">
+          <div class="flex-shrink-0 w-12 h-12 bg-orange-600 rounded-full flex items-center justify-center text-white font-bold text-xl">9</div>
+          <div>
+            <h3 class="text-lg font-bold text-white mb-2">📞 Neem contact op met Odido</h3>
+            <p class="text-gray-300 text-sm leading-relaxed">
+              Vraag via <a href="https://www.odido.nl/veiligheid" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:text-blue-300 underline">odido.nl/veiligheid</a>
+              om informatie over welke gegevens er precies van jou zijn uitgelekt. Odido is wettelijk
+              verplicht gedupeerden te informeren. Volg ook hun updates voor verdere maatregelen.
+            </p>
+          </div>
+        </div>
+
+        <div class="bg-gray-800 rounded-xl p-6 border border-gray-700 flex gap-5">
+          <div class="flex-shrink-0 w-12 h-12 bg-red-600 rounded-full flex items-center justify-center text-white font-bold text-xl">10</div>
+          <div>
+            <h3 class="text-lg font-bold text-white mb-2">⚖️ Doe aangifte bij politie indien nodig</h3>
+            <p class="text-gray-300 text-sm leading-relaxed">
+              Als je daadwerkelijk slachtoffer wordt van fraude of identiteitsdiefstal als gevolg van dit lek,
+              doe dan aangifte bij de politie. Dit is ook belangrijk voor een eventuele schadeclaim tegen Odido.
+              Houd alle bewijs (e-mails, sms'jes, brieven) goed bij.
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- HAVE I BEEN PWNED -->
+  <section id="hibp" class="py-20 px-4 bg-gray-900">
+    <div class="max-w-4xl mx-auto">
+      <div class="bg-gradient-to-br from-orange-900/60 to-gray-800 rounded-2xl p-8 md:p-12 border border-orange-700/50 text-center">
+        <div class="text-6xl mb-6">🔍</div>
+        <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">Controleer of jouw data uitgelekt is</h2>
+        <p class="text-gray-300 text-lg mb-3 max-w-xl mx-auto">
+          <strong class="text-orange-400">Have I Been Pwned</strong> is een gratis dienst van
+          beveiligingsonderzoeker Troy Hunt. Vul je e-mailadres of telefoonnummer in om te zien of jouw
+          gegevens voorkomen in bekende datalekken — inclusief het Odido-lek zodra dat is verwerkt.
+        </p>
+        <p class="text-gray-400 text-sm mb-8">
+          Je gegevens worden niet opgeslagen. De dienst is veilig en privacyvriendelijk.
+        </p>
+        <a href="https://haveibeenpwned.com/" target="_blank" rel="noopener noreferrer"
+           class="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-bold text-lg px-8 py-4 rounded-xl transition shadow-xl mb-6">
+          Controleer nu op HaveIBeenPwned.com →
+        </a>
+        <div class="mt-6 p-5 bg-gray-800/70 rounded-xl border border-gray-700">
+          <p class="text-gray-300 text-sm leading-relaxed">
+            🇳🇱 <strong class="text-white">Nederlandse alternatief:</strong> De Nederlandse politie biedt ook de
+            <a href="https://www.politie.nl/informatie/checkjehack.html" target="_blank" rel="noopener noreferrer"
+               class="text-blue-400 hover:text-blue-300 underline font-semibold">Check je Hack</a>
+            tool aan. Hiermee kun je controleren of jouw gegevens zijn aangetroffen in datasets die de politie
+            heeft onderzocht bij cybercriminaliteitsonderzoeken.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq" class="py-20 px-4 bg-gray-950">
+    <div class="max-w-3xl mx-auto">
+      <h2 class="text-3xl md:text-4xl font-bold text-white mb-3">Veelgestelde vragen</h2>
+      <p class="text-gray-400 text-lg mb-10">Antwoorden op de meest gestelde vragen over het Odido datalek.</p>
+
+      <div class="flex flex-col gap-3" id="faq-list">
+
+        <div class="faq-item bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+          <button class="faq-btn w-full text-left px-6 py-5 flex justify-between items-center hover:bg-gray-700 transition" aria-expanded="false">
+            <span class="font-semibold text-white pr-4">Hoe weet ik of mijn gegevens zijn gelekt?</span>
+            <span class="faq-icon text-gray-400 text-2xl flex-shrink-0">+</span>
+          </button>
+          <div class="faq-answer px-6 pb-5">
+            <p class="text-gray-300 text-sm leading-relaxed">
+              Odido is wettelijk verplicht je te informeren als je gegevens zijn uitgelekt. Controleer ook je
+              e-mail op berichten van Odido. Daarnaast kun je je e-mailadres invoeren op
+              <a href="https://haveibeenpwned.com/" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:text-blue-300 underline">haveibeenpwned.com</a>
+              of de Nederlandse <a href="https://www.politie.nl/informatie/checkjehack.html" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:text-blue-300 underline">Check je Hack</a>
+              tool van de politie gebruiken. Ben je klant (geweest) bij Odido of T-Mobile Nederland,
+              dan is de kans groot dat je gegevens onderdeel zijn van het lek.
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+          <button class="faq-btn w-full text-left px-6 py-5 flex justify-between items-center hover:bg-gray-700 transition" aria-expanded="false">
+            <span class="font-semibold text-white pr-4">Zijn er ook wachtwoorden uitgelekt?</span>
+            <span class="faq-icon text-gray-400 text-2xl flex-shrink-0">+</span>
+          </button>
+          <div class="faq-answer px-6 pb-5">
+            <p class="text-gray-300 text-sm leading-relaxed">
+              Nee, wachtwoorden zijn <strong>niet</strong> onderdeel van het lek. Ook belgegevens en
+              factuurspecificaties waren niet aanwezig in het gelekte systeem. Toch is het verstandig je
+              wachtwoord bij Odido te wijzigen — zeker als je dat wachtwoord ook elders gebruikt.
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+          <button class="faq-btn w-full text-left px-6 py-5 flex justify-between items-center hover:bg-gray-700 transition" aria-expanded="false">
+            <span class="font-semibold text-white pr-4">Wat doet Odido om mij te helpen?</span>
+            <span class="faq-icon text-gray-400 text-2xl flex-shrink-0">+</span>
+          </button>
+          <div class="faq-answer px-6 pb-5">
+            <p class="text-gray-300 text-sm leading-relaxed">
+              Odido heeft een speciale informatiepagina opgezet op
+              <a href="https://www.odido.nl/veiligheid" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:text-blue-300 underline">odido.nl/veiligheid</a>.
+              Hier kun je meer informatie vinden over welke gegevens er van jou zijn uitgelekt en welke
+              stappen Odido neemt. De Autoriteit Persoonsgegevens onderzoekt of Odido heeft voldaan aan
+              alle wettelijke verplichtingen rondom dit datalek.
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+          <button class="faq-btn w-full text-left px-6 py-5 flex justify-between items-center hover:bg-gray-700 transition" aria-expanded="false">
+            <span class="font-semibold text-white pr-4">Kan ik Odido aansprakelijk stellen?</span>
+            <span class="faq-icon text-gray-400 text-2xl flex-shrink-0">+</span>
+          </button>
+          <div class="faq-answer px-6 pb-5">
+            <p class="text-gray-300 text-sm leading-relaxed">
+              Mogelijk wel. Onder de AVG (Algemene Verordening Gegevensbescherming) heb je het recht op
+              compensatie als je aantoonbaar schade hebt geleden door het datalek. Stichting
+              Consumentenbond en diverse claimorganisaties kunnen je hierbij helpen. Bewaar alle
+              documentatie van eventuele fraude of identiteitsdiefstal als bewijs. Raadpleeg ook de
+              <a href="https://www.consumentenbond.nl/veilig-internetten/datalekken-de-gevaren-en-wat-moet-je-doen" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:text-blue-300 underline">Consumentenbond</a>
+              voor meer informatie.
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+          <button class="faq-btn w-full text-left px-6 py-5 flex justify-between items-center hover:bg-gray-700 transition" aria-expanded="false">
+            <span class="font-semibold text-white pr-4">Wat zijn de risico's van mijn gelekte ID-nummer?</span>
+            <span class="faq-icon text-gray-400 text-2xl flex-shrink-0">+</span>
+          </button>
+          <div class="faq-answer px-6 pb-5">
+            <p class="text-gray-300 text-sm leading-relaxed">
+              Een uitgelekt ID-nummer (paspoort, rijbewijs of ID-kaart) is ernstig. Criminelen kunnen het
+              gebruiken om bankrekeningen of kredietlijnen te openen, huurcontracten te sluiten, of
+              goederen te kopen op jouw naam. In combinatie met je BSN en adres is het risico extra groot.
+              Als je vermoedt dat er misbruik van is gemaakt, doe dan direct aangifte bij de politie en
+              meld het bij je bank. Je kunt ook contact opnemen met het
+              <a href="https://www.politie.nl" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:text-blue-300 underline">Centraal Meldpunt Identiteitsfraude</a>.
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- BRONNEN -->
+  <section id="bronnen" class="py-20 px-4 bg-gray-900">
+    <div class="max-w-5xl mx-auto">
+      <h2 class="text-3xl md:text-4xl font-bold text-white mb-3">Bronnen &amp; Referenties</h2>
+      <p class="text-gray-400 text-lg mb-10">Betrouwbare bronnen over het Odido datalek en wat je kunt doen.</p>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+
+        <div class="bg-gray-800 rounded-xl p-5 border border-gray-700 flex flex-col">
+          <div class="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-2">NOS</div>
+          <h3 class="font-bold text-white text-sm mb-2">Odido hackers publiceren resterende klantdata</h3>
+          <p class="text-gray-400 text-xs leading-relaxed flex-grow mb-4">
+            NOS-berichtgeving over de publicatie van de volledige klantdata inclusief miljoenen ID-nummers.
+          </p>
+          <a href="https://nos.nl/artikel/2604461-odido-hackers-publiceren-resterende-klantdata-ook-miljoenen-id-nummers"
+             target="_blank" rel="noopener noreferrer"
+             class="text-blue-400 hover:text-blue-300 text-xs font-semibold flex items-center gap-1">
+            Bekijk bron →
+          </a>
+        </div>
+
+        <div class="bg-gray-800 rounded-xl p-5 border border-gray-700 flex flex-col">
+          <div class="text-xs font-semibold text-green-400 uppercase tracking-wider mb-2">Consumentenbond</div>
+          <h3 class="font-bold text-white text-sm mb-2">Datalekken: de gevaren en wat moet je doen</h3>
+          <p class="text-gray-400 text-xs leading-relaxed flex-grow mb-4">
+            Praktisch advies van de Consumentenbond over de risico's van datalekken en beschermingsmaatregelen.
+          </p>
+          <a href="https://www.consumentenbond.nl/veilig-internetten/datalekken-de-gevaren-en-wat-moet-je-doen"
+             target="_blank" rel="noopener noreferrer"
+             class="text-blue-400 hover:text-blue-300 text-xs font-semibold flex items-center gap-1">
+            Bekijk bron →
+          </a>
+        </div>
+
+        <div class="bg-gray-800 rounded-xl p-5 border border-gray-700 flex flex-col">
+          <div class="text-xs font-semibold text-orange-400 uppercase tracking-wider mb-2">Odido Officieel</div>
+          <h3 class="font-bold text-white text-sm mb-2">Odido Veiligheid – Officiële informatiepagina</h3>
+          <p class="text-gray-400 text-xs leading-relaxed flex-grow mb-4">
+            De officiële pagina van Odido met informatie voor gedupeerde klanten en genomen maatregelen.
+          </p>
+          <a href="https://www.odido.nl/veiligheid"
+             target="_blank" rel="noopener noreferrer"
+             class="text-blue-400 hover:text-blue-300 text-xs font-semibold flex items-center gap-1">
+            Bekijk bron →
+          </a>
+        </div>
+
+        <div class="bg-gray-800 rounded-xl p-5 border border-gray-700 flex flex-col">
+          <div class="text-xs font-semibold text-red-400 uppercase tracking-wider mb-2">RTL Nieuws</div>
+          <h3 class="font-bold text-white text-sm mb-2">Wat moet je doen als jouw gegevens zijn gelekt?</h3>
+          <p class="text-gray-400 text-xs leading-relaxed flex-grow mb-4">
+            Stappenplan van RTL Nieuws over de acties die je moet ondernemen na het Odido datalek.
+          </p>
+          <a href="https://www.rtl.nl/nieuws/economie/artikel/5566879/wat-moet-je-doen-als-jouw-gegevens-zijn-gelekt-bij-odido"
+             target="_blank" rel="noopener noreferrer"
+             class="text-blue-400 hover:text-blue-300 text-xs font-semibold flex items-center gap-1">
+            Bekijk bron →
+          </a>
+        </div>
+
+        <div class="bg-gray-800 rounded-xl p-5 border border-gray-700 flex flex-col">
+          <div class="text-xs font-semibold text-red-400 uppercase tracking-wider mb-2">RTL Nieuws</div>
+          <h3 class="font-bold text-white text-sm mb-2">Odido hackers: check gelekte data</h3>
+          <p class="text-gray-400 text-xs leading-relaxed flex-grow mb-4">
+            RTL Nieuws over hoe je kunt controleren of jouw data in het lek zit en wat de hackers hebben vrijgegeven.
+          </p>
+          <a href="https://www.rtl.nl/nieuws/binnenland/artikel/5572982/odido-hackers-check-gelekte-data"
+             target="_blank" rel="noopener noreferrer"
+             class="text-blue-400 hover:text-blue-300 text-xs font-semibold flex items-center gap-1">
+            Bekijk bron →
+          </a>
+        </div>
+
+        <div class="bg-gray-800 rounded-xl p-5 border border-gray-700 flex flex-col">
+          <div class="text-xs font-semibold text-purple-400 uppercase tracking-wider mb-2">Tweakers</div>
+          <h3 class="font-bold text-white text-sm mb-2">Berichtgeving Tweakers over Odido datalek</h3>
+          <p class="text-gray-400 text-xs leading-relaxed flex-grow mb-4">
+            Technische achtergrond en nieuws over de omvang en impact van het Odido-lek op Tweakers.net.
+          </p>
+          <a href="https://tweakers.net/nieuws/" target="_blank" rel="noopener noreferrer"
+             class="text-blue-400 hover:text-blue-300 text-xs font-semibold flex items-center gap-1">
+            Bekijk bron →
+          </a>
+        </div>
+
+        <div class="bg-gray-800 rounded-xl p-5 border border-gray-700 flex flex-col">
+          <div class="text-xs font-semibold text-yellow-400 uppercase tracking-wider mb-2">NU.nl</div>
+          <h3 class="font-bold text-white text-sm mb-2">NU.nl berichtgeving over Odido datalek</h3>
+          <p class="text-gray-400 text-xs leading-relaxed flex-grow mb-4">
+            Actueel nieuws op NU.nl over de publicatie van alle 6,5 miljoen records door ShinyHunters.
+          </p>
+          <a href="https://www.nu.nl/" target="_blank" rel="noopener noreferrer"
+             class="text-blue-400 hover:text-blue-300 text-xs font-semibold flex items-center gap-1">
+            Bekijk bron →
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="bg-gray-900 border-t border-gray-800 py-10 px-4">
+    <div class="max-w-5xl mx-auto">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div>
+          <div class="text-white font-bold text-lg mb-2">🔒 Odido Datalek Informatie</div>
+          <p class="text-gray-400 text-xs max-w-md leading-relaxed">
+            <strong>Disclaimer:</strong> Deze website is een onafhankelijke, informatieve bron over het Odido datalek
+            en is op geen enkele wijze gelieerd aan of goedgekeurd door Odido of T-Mobile. De informatie op
+            deze site is uitsluitend bedoeld ter informatie en vormt geen juridisch of financieel advies.
+            © 2026
+          </p>
+        </div>
+        <div class="flex flex-col gap-2 text-sm">
+          <a href="#bronnen" class="text-gray-400 hover:text-white transition">Bronnen</a>
+          <a href="#actiepunten" class="text-gray-400 hover:text-white transition">Actiepunten</a>
+          <a href="https://haveibeenpwned.com/" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-white transition">Have I Been Pwned</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- BACK TO TOP BUTTON -->
+  <button id="back-to-top"
+          class="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-500 text-white rounded-full w-12 h-12 flex items-center justify-center shadow-lg transition opacity-0 pointer-events-none z-40"
+          aria-label="Terug naar boven" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
+    </svg>
+  </button>
+
+  <script>
+    // Mobile menu toggle
+    const menuBtn = document.getElementById('menu-btn');
+    const mobileMenu = document.getElementById('mobile-menu');
+    const iconOpen = document.getElementById('icon-open');
+    const iconClose = document.getElementById('icon-close');
+
+    menuBtn.addEventListener('click', function() {
+      const isHidden = mobileMenu.classList.contains('hidden');
+      mobileMenu.classList.toggle('hidden', !isHidden);
+      iconOpen.classList.toggle('hidden', !isHidden);
+      iconClose.classList.toggle('hidden', isHidden);
+    });
+
+    function closeMobileMenu() {
+      mobileMenu.classList.add('hidden');
+      iconOpen.classList.remove('hidden');
+      iconClose.classList.add('hidden');
+    }
+
+    // FAQ accordion
+    document.querySelectorAll('.faq-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        const answer = btn.nextElementSibling;
+        const icon = btn.querySelector('.faq-icon');
+        const isOpen = answer.classList.contains('open');
+
+        // Close all
+        document.querySelectorAll('.faq-answer').forEach(function(a) {
+          a.classList.remove('open');
+        });
+        document.querySelectorAll('.faq-icon').forEach(function(i) {
+          i.classList.remove('rotated');
+        });
+        document.querySelectorAll('.faq-btn').forEach(function(b) {
+          b.setAttribute('aria-expanded', 'false');
+        });
+
+        // Toggle current
+        if (!isOpen) {
+          answer.classList.add('open');
+          icon.classList.add('rotated');
+          btn.setAttribute('aria-expanded', 'true');
+        }
+      });
+    });
+
+    // Back to top button
+    const backToTop = document.getElementById('back-to-top');
+    window.addEventListener('scroll', function() {
+      if (window.scrollY > 400) {
+        backToTop.classList.remove('opacity-0', 'pointer-events-none');
+        backToTop.classList.add('opacity-100');
+      } else {
+        backToTop.classList.add('opacity-0', 'pointer-events-none');
+        backToTop.classList.remove('opacity-100');
+      }
+    });
+  </script>
+
+</body>
+</html>
+
+HTML_CONTENT
+success "index.html geschreven"
+
+# Maak Nginx server block
+info "Nginx configuratie aanmaken..."
+cat > /etc/nginx/sites-available/odido << 'NGINX_CONF'
+server {
+    listen 80;
+    listen [::]:80;
+
+    root /var/www/odido;
+    index index.html;
+
+    server_name _;
+
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml image/svg+xml;
+    gzip_min_length 256;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    access_log /var/log/nginx/odido.access.log;
+    error_log  /var/log/nginx/odido.error.log;
+}
+NGINX_CONF
+success "Nginx configuratie aangemaakt"
+
+# Activeer site
+info "Site activeren..."
+ln -sf /etc/nginx/sites-available/odido /etc/nginx/sites-enabled/odido
+success "Site geactiveerd"
+
+# Verwijder default site
+if [ -L /etc/nginx/sites-enabled/default ]; then
+  rm /etc/nginx/sites-enabled/default
+  info "Standaard Nginx site verwijderd"
+fi
+
+# Test Nginx configuratie
+info "Nginx configuratie testen..."
+nginx -t
+success "Nginx configuratie geldig"
+
+# Herstart en activeer Nginx
+info "Nginx herstarten en inschakelen..."
+systemctl restart nginx
+systemctl enable nginx
+success "Nginx geherstart en ingeschakeld"
+
+# Rechten instellen
+info "Bestandsrechten instellen..."
+chown -R www-data:www-data /var/www/odido
+chmod -R 755 /var/www/odido
+success "Rechten ingesteld"
+
+# Succesmelding
+SERVER_IP=$(hostname -I | awk '{print $1}')
+echo ""
+echo -e "${BOLD}${GREEN}=======================================${NC}"
+echo -e "${BOLD}${GREEN}  Installatie voltooid!                ${NC}"
+echo -e "${BOLD}${GREEN}=======================================${NC}"
+echo ""
+echo -e "  Website bereikbaar op: ${BOLD}${CYAN}http://${SERVER_IP}/${NC}"
+echo ""
+echo -e "  Beheer Nginx met:"
+echo -e "    ${YELLOW}systemctl status nginx${NC}"
+echo -e "    ${YELLOW}systemctl restart nginx${NC}"
+echo ""
